@@ -1,0 +1,446 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Ujian Online Siswa</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;800&family=Source+Sans+3:wght@300;400;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+
+<script>
+tailwind.config={theme:{extend:{colors:{kop:'#1a2744',kopAccent:'#c9a84c',dark:'#0f1923',card:'#182538',border:'#2a3f5f',muted:'#7a8ba5',light:'#e8ecf1',success:'#22c55e',danger:'#ef4444',warning:'#f59e0b'},fontFamily:{display:['Playfair Display','serif'],body:['Source Sans 3','sans-serif']}}}}
+</script>
+
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:'Source Sans 3',sans-serif;background:#0f1923;color:#e8ecf1;min-height:100vh;overflow:hidden;-webkit-user-select:none;user-select:none}
+::-webkit-scrollbar{width:5px}::-webkit-scrollbar-track{background:#182538}::-webkit-scrollbar-thumb{background:#2a3f5f;border-radius:3px}
+
+/* Toast */
+.toast{position:fixed;top:20px;right:20px;z-index:9999;padding:14px 20px;border-radius:10px;font-size:14px;font-weight:600;animation:slideIn .3s ease;max-width:350px;display:flex;align-items:center;gap:10px;box-shadow:0 8px 24px rgba(0,0,0,.4)}
+.toast-success{background:#166534;color:#fff;border:1px solid #22c55e}
+.toast-error{background:#7f1d1d;color:#fff;border:1px solid #ef4444}
+.toast-warning{background:#854d0e;color:#fff;border:1px solid #eab308}
+@keyframes slideIn{from{transform:translateX(120%);opacity:0}to{transform:translateX(0);opacity:1}}
+
+/* Input */
+.input-field{background:#0f1923;border:1px solid #2a3f5f;color:#e8ecf1;padding:12px 16px;border-radius:8px;width:100%;font-size:16px;transition:border-color .2s}
+.input-field:focus{outline:none;border-color:#c9a84c;box-shadow:0 0 0 2px rgba(201,168,76,.15)}
+.btn-primary{background:linear-gradient(135deg,#c9a84c,#b8943f);color:#1a2744;font-weight:700;padding:12px 28px;border-radius:8px;border:none;cursor:pointer;transition:all .2s;font-size:16px;display:inline-flex;align-items:center;justify-content:center;width:100%}
+.btn-primary:hover{transform:translateY(-2px);box-shadow:0 4px 15px rgba(201,168,76,.3)}
+.btn-primary:disabled{opacity:.5;cursor:not-allowed;filter:grayscale(1)}
+
+/* === LAYOUT UJIAN (FULL WIDTH, TANPA SIDEBAR) === */
+.exam-container{display:flex;flex-direction:column;height:100vh;width:100%}
+.exam-header{background:#1a2744;border-bottom:1px solid #2a3f5f;padding:10px 16px;display:flex;align-items:center;justify-content:space-between;flex-shrink:0;z-index:20;gap:12px}
+.exam-main{flex:1;overflow-y:auto;padding:20px 16px;position:relative;background:#0f1923}
+
+/* Navigation Horizontal */
+.nav-soal-bar{display:flex;gap:6px;overflow-x:auto;padding:8px 0;flex-shrink:0;scroll-behavior:smooth}
+.nav-soal-bar::-webkit-scrollbar{height:0}
+.nav-soal-item{width:42px;height:42px;min-width:42px;display:flex;align-items:center;justify-content:center;border-radius:8px;background:#182538;border:1.5px solid #2a3f5f;color:#7a8ba5;cursor:pointer;transition:all .15s;font-weight:700;font-size:13px}
+.nav-soal-item:hover{border-color:#c9a84c;color:#e8ecf1}
+.nav-soal-item.active{background:#c9a84c;color:#1a2744;border-color:#c9a84c;transform:scale(1.08);box-shadow:0 0 12px rgba(201,168,76,.3)}
+.nav-soal-item.answered{border-color:#22c55e;color:#22c55e;background:rgba(34,197,94,.08)}
+.nav-soal-item.active.answered{color:#1a2744;background:#22c55e;border-color:#22c55e}
+
+/* Label Seksi */
+.nav-section-label{font-size:10px;text-transform:uppercase;letter-spacing:1px;color:#4b5e78;font-weight:700;padding:4px 2px;white-space:nowrap;min-width:fit-content;display:flex;align-items:center}
+.nav-separator{width:1px;background:#2a3f5f;min-width:1px;margin:4px 6px}
+
+/* Soal Card */
+.soal-card{background:#182538;border:1px solid #2a3f5f;border-radius:12px;padding:28px 24px;max-width:800px;margin:0 auto;width:100%}
+.opsi-item{display:flex;align-items:flex-start;gap:14px;padding:14px;border:1.5px solid #2a3f5f;border-radius:8px;cursor:pointer;transition:all .15s;margin-bottom:8px;background:#0f1923}
+.opsi-item:hover{border-color:#c9a84c;background:rgba(201,168,76,.04)}
+.opsi-item.selected{border-color:#c9a84c;background:rgba(201,168,76,.08);box-shadow:inset 0 0 0 1px rgba(201,168,76,.15)}
+.opsi-letter{width:28px;height:28px;min-width:28px;border-radius:6px;background:#182538;border:1.5px solid #2a3f5f;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:13px;color:#7a8ba5;transition:all .15s}
+.opsi-item.selected .opsi-letter{background:#c9a84c;border-color:#c9a84c;color:#1a2744}
+
+/* Essay */
+.essay-area{width:100%;min-height:180px;background:#0f1923;border:1.5px solid #2a3f5f;color:#e8ecf1;padding:14px;border-radius:8px;font-family:inherit;font-size:15px;resize:none;line-height:1.6}
+.essay-area:focus{outline:none;border-color:#c9a84c;box-shadow:0 0 0 2px rgba(201,168,76,.12)}
+
+/* Navigation Buttons */
+.nav-btn{display:flex;align-items:center;gap:8px;padding:10px 20px;border-radius:8px;border:1.5px solid #2a3f5f;background:#182538;color:#e8ecf1;cursor:pointer;font-size:14px;font-weight:600;transition:all .15s}
+.nav-btn:hover{border-color:#c9a84c;color:#c9a84c}
+.nav-btn:disabled{opacity:.3;cursor:not-allowed;border-color:#2a3f5f;color:#7a8ba5}
+.nav-btn.finish{background:rgba(239,68,68,.1);border-color:rgba(239,68,68,.4);color:#ef4444}
+.nav-btn.finish:hover{background:#ef4444;color:white;border-color:#ef4444}
+
+/* Result Modal */
+.result-overlay{position:fixed;inset:0;background:rgba(0,0,0,.92);z-index:100;display:flex;align-items:center;justify-content:center;backdrop-filter:blur(6px)}
+.result-card{background:#182538;width:90%;max-width:460px;border-radius:16px;padding:36px;text-align:center;border:2px solid #2a3f5f;box-shadow:0 0 50px rgba(201,168,76,.15);animation:popIn .4s cubic-bezier(.175,.885,.32,1.275)}
+@keyframes popIn{from{transform:scale(.8);opacity:0}to{transform:scale(1);opacity:1}}
+.circle-progress{width:140px;height:140px;border-radius:50%;border:7px solid #2a3f5f;display:flex;align-items:center;justify-content:center;margin:0 auto 16px}
+.circle-progress.success{border-color:#22c55e;color:#22c55e;box-shadow:0 0 20px rgba(34,197,94,.25)}
+.circle-progress.fail{border-color:#ef4444;color:#ef4444;box-shadow:0 0 20px rgba(239,68,68,.25)}
+.circle-score{font-size:2.8rem;font-weight:800;font-family:'Playfair Display',serif}
+
+/* Warning */
+.warning-overlay{position:fixed;inset:0;background:rgba(239,68,68,.92);z-index:200;display:none;align-items:center;justify-content:center;flex-direction:column;color:white;text-align:center;padding:20px}
+.warning-overlay.active{display:flex}
+
+/* Progress Bar */
+.progress-bar-bg{height:3px;background:#2a3f5f;flex-shrink:0}
+.progress-bar-fill{height:100%;background:linear-gradient(90deg,#c9a84c,#22c55e);transition:width .3s ease;border-radius:0 2px 2px 0}
+
+/* Fade */
+@keyframes fadeInUp{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
+.fade-up{animation:fadeInUp .25s ease-out forwards}
+</style>
+</head>
+<body oncontextmenu="return false">
+
+<div id="toastContainer"></div>
+
+<!-- WARNING -->
+<div id="warningModal" class="warning-overlay">
+    <i class="fas fa-exclamation-triangle text-6xl mb-4 animate-pulse"></i>
+    <h1 class="text-3xl font-bold mb-2">PERINGATAN!</h1>
+    <p class="text-lg mb-6 opacity-90">Terdeteksi mencoba keluar dari aplikasi ujian.<br>Silakan kembali segera.</p>
+    <button onclick="resumeExam()" class="bg-white text-red-700 font-bold py-3 px-8 rounded-full hover:bg-gray-200 transition text-base">KEMBALI KE UJIAN</button>
+</div>
+
+<!-- LOGIN -->
+<div id="loginSection" class="min-h-screen flex items-center justify-center p-4 bg-gradient-to-br from-kop to-dark relative">
+    <div class="absolute inset-0 opacity-[0.03]" style="background-image:radial-gradient(#c9a84c 1px,transparent 1px);background-size:28px 28px"></div>
+    <div class="bg-card border border-border p-8 rounded-2xl shadow-2xl w-full max-w-md relative z-10">
+        <div class="text-center mb-8">
+            <div class="w-16 h-16 bg-kopAccent/10 rounded-full flex items-center justify-center mx-auto mb-4">
+                <i class="fas fa-user-graduate text-3xl text-kopAccent"></i>
+            </div>
+            <h1 class="font-display text-2xl font-bold text-light">Ujian Online</h1>
+            <p class="text-muted text-sm mt-2">Masukkan NISN dan Token Ujian untuk memulai.</p>
+        </div>
+        <div class="space-y-4">
+            <div><label class="block text-xs font-bold text-muted uppercase tracking-wider mb-2">NISN Siswa</label><input type="number" id="inputNisn" class="input-field text-center text-lg tracking-widest" placeholder="1234567890"></div>
+            <div><label class="block text-xs font-bold text-muted uppercase tracking-wider mb-2">Token Ujian</label><input type="text" id="inputToken" class="input-field text-center text-lg font-mono tracking-widest" placeholder="XXXXXX" style="text-transform:uppercase"></div>
+            <button onclick="handleLogin()" id="btnLogin" class="btn-primary mt-6"><i class="fas fa-sign-in-alt mr-2"></i>MULAI UJIAN</button>
+        </div>
+        <div class="mt-6 text-center text-xs text-muted"><i class="fas fa-shield-alt mr-1"></i>Sistem ini termonitor. Kecurangan akan tercatat.</div>
+    </div>
+</div>
+
+<!-- EXAM (FULL WIDTH, NO SIDEBAR) -->
+<div id="examSection" class="hidden exam-container">
+    <!-- Header: Info + Timer + Submit -->
+    <div class="exam-header">
+        <div class="flex items-center gap-3 min-w-0">
+            <div class="w-8 h-8 rounded-lg bg-kopAccent/15 flex items-center justify-center flex-shrink-0"><i class="fas fa-file-alt text-kopAccent text-sm"></i></div>
+            <div class="min-w-0"><div class="text-xs text-muted truncate" id="examInfoLabel">Loading...</div><div class="text-xs text-kopAccent font-bold truncate" id="examInfoDetail">-</div></div>
+        </div>
+        <div class="text-center flex-shrink-0">
+            <div class="text-[10px] text-muted uppercase tracking-wider">Sisa Waktu</div>
+            <div class="text-xl font-mono font-bold text-kopAccent leading-tight" id="timerDisplay">00:00</div>
+        </div>
+        <button onclick="submitExam()" class="nav-btn finish text-xs py-2 px-4 flex-shrink-0"><i class="fas fa-paper-plane"></i><span class="hidden sm:inline">Selesai</span></button>
+    </div>
+
+    <!-- Progress Bar -->
+    <div class="progress-bar-bg"><div class="progress-bar-fill" id="progressBar" style="width:0%"></div></div>
+
+    <!-- Navigation Horizontal (No Sidebar!) -->
+    <div class="px-4 pt-2 pb-1 bg-kop/50 flex-shrink-0" id="navWrap">
+        <div class="flex items-center gap-1 overflow-x-auto" id="navBar" style="scroll-behavior:smooth">
+            <!-- Diisi JS -->
+        </div>
+    </div>
+
+    <!-- Main Question Area (FULL WIDTH) -->
+    <div class="exam-main" id="questionArea"></div>
+</div>
+
+<!-- RESULT MODAL -->
+<div id="resultModal" class="result-overlay hidden">
+    <div class="result-card">
+        <div class="mb-3"><i class="fas fa-clipboard-check text-5xl text-kopAccent"></i></div>
+        <h2 class="text-2xl font-bold text-light mb-1">Ujian Selesai</h2>
+        <p class="text-muted text-sm mb-5">Jawaban telah dikirim ke server guru.</p>
+        <div id="scoreCircle" class="circle-progress"><span class="circle-score" id="scoreValue">0</span></div>
+        <div id="resultStatus" class="text-lg font-bold uppercase tracking-widest mb-4"></div>
+        <div class="bg-dark/50 p-3 rounded text-sm mb-4 border border-border">
+            <div class="flex justify-between"><span class="text-muted">Benar:</span><span class="text-success font-bold" id="detailCorrect">0</span></div>
+            <div class="flex justify-between"><span class="text-muted">Salah:</span><span class="text-danger font-bold" id="detailWrong">0</span></div>
+        </div>
+        <p class="text-xs text-muted mb-6" id="resultSub">Soal Essay akan dikoreksi manual oleh Guru.</p>
+        <div class="pt-5 border-t border-border">
+            <p class="text-xs text-muted mb-2">Tunggu instruksi dari pengawas.</p>
+            <button onclick="location.reload()" class="text-kopAccent hover:text-white underline text-sm">Kembali ke Login</button>
+        </div>
+    </div>
+</div>
+
+<script>
+// === FIREBASE ===
+var firebaseConfig={apiKey:"AIzaSyC0Hs7SUgPAeQ_JaotHUJL5m6nIhCRif-8",authDomain:"pembuatan-soal.firebaseapp.com",projectId:"pembuatan-soal",storageBucket:"pembuatan-soal.firebasestorage.app",messagingSenderId:"56200686194",appId:"1:56200686194:web:eb2de00c9d152d87bcf0eb"};
+var db;
+try{firebase.initializeApp(firebaseConfig);db=firebase.firestore();db.settings({experimentalAutoDetectLongPolling:true,cacheSizeBytes:firebase.firestore.CACHE_SIZE_UNLIMITED})}catch(e){console.error(e);alert("Gagal koneksi database.")}
+
+// === STATE ===
+var currentStudent=null,currentExam=null,questionsList=[],answers={},currentQuestionIndex=0,timerInterval,warningCount=0,isExamActive=false;
+var hasEssay=false,hasPG=false,pgCount=0,esCount=0;
+
+// === CEK NISN DARI URL ===
+(function(){var p=new URLSearchParams(window.location.search);var n=p.get('nisn');if(n){document.getElementById('inputNisn').value=n}})();
+
+// === UTILS ===
+function showToast(msg,type){type=type||'success';var c=document.getElementById('toastContainer');var t=document.createElement('div');var ic=type==='success'?'check-circle':type==='error'?'times-circle':'exclamation-circle';t.className='toast toast-'+type;t.innerHTML='<i class="fas fa-'+ic+'"></i><span>'+msg+'</span>';c.appendChild(t);setTimeout(function(){if(t.parentNode)t.remove()},4000)}
+function escHtml(s){if(!s)return '';return String(s).replace(/[&<>"']/g,function(m){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[m]})}
+function setLoading(btn,load,text){if(load){btn.disabled=true;btn.innerHTML='<i class="fas fa-spinner fa-spin mr-2"></i>'+text}else{btn.disabled=false;btn.innerHTML='<i class="fas fa-sign-in-alt mr-2"></i>'+text}}
+
+// === LOGIN ===
+function handleLogin(){
+    var nisn=document.getElementById('inputNisn').value.trim();
+    var token=document.getElementById('inputToken').value.trim().toUpperCase();
+    var btn=document.getElementById('btnLogin');
+    if(!nisn||!token){showToast('NISN dan Token wajib diisi!','error');return}
+    setLoading(btn,true,'MEMERIKSA...');
+
+    db.collection('exam_tokens').where('token','==',token).limit(1).get().then(function(ts){
+        if(ts.empty){setLoading(btn,false,'MULAI UJIAN');showToast('Token tidak valid!','error');return}
+        var ed=ts.docs[0].data();
+
+        db.collection('students').where('nisn','==',nisn).limit(1).get().then(function(ss){
+            if(ss.empty){setLoading(btn,false,'MULAI UJIAN');showToast('NISN tidak ditemukan!','error');return}
+            var sd=ss.docs[0].data();
+            if(sd.kelas!==ed.kelas){setLoading(btn,false,'MULAI UJIAN');showToast('Token untuk kelas '+ed.kelas+', bukan kelas Anda.','error');return}
+
+            currentExam=ed;currentStudent=Object.assign({id:ss.docs[0].id},sd);
+            setLoading(btn,false,'MULAI UJIAN');startExamFlow();
+        }).catch(function(e){setLoading(btn,false,'MULAI UJIAN');showToast('Gagal ambil data siswa.','error')});
+    }).catch(function(e){setLoading(btn,false,'MULAI UJIAN');showToast('Gagal koneksi server.','error')});
+}
+
+// === MULAI UJIAN ===
+function startExamFlow(){
+    var col=currentExam.isPAJ?'questions_paj':'questions';
+    db.collection(col).where('mapel','==',currentExam.mapel).get().then(function(snap){
+        if(snap.empty){alert("Tidak ada soal untuk Mapel ini. Hubungi Guru.");location.reload();return}
+        var all=snap.docs.map(function(d){return Object.assign({id:d.id},d.data())});
+        questionsList=all.filter(function(q){return q.kelas===currentExam.kelas}).sort(function(a,b){return a.createdAt&&b.createdAt?a.createdAt.toDate()-b.createdAt.toDate():0});
+        if(!questionsList.length){alert("Soal untuk "+currentExam.mapel+" "+currentExam.kelas+" belum dibuat.");location.reload();return}
+
+        // Hitung PG & Essay
+        pgCount=questionsList.filter(function(q){return q.type==='pg'}).length;
+        esCount=questionsList.filter(function(q){return q.type==='uraian'}).length;
+        hasPG=pgCount>0;hasEssay=esCount>0;
+
+        document.getElementById('loginSection').classList.add('hidden');
+        document.getElementById('examSection').classList.remove('hidden');
+
+        // Info header
+        var label=currentExam.isPAJ?'Penilaian Akhir Jenjang (PAJ)':'Sumatif Akhir Tahun';
+        document.getElementById('examInfoLabel').textContent=label;
+        document.getElementById('examInfoDetail').textContent=getMapelName(currentExam.mapel)+' — '+currentExam.kelas+' — '+questionsList.length+' Soal';
+
+        buildNavigation();
+        startTimer(currentExam.durasi*60);
+        isExamActive=true;
+        loadQuestion(0);
+        requestFullScreen();
+        showToast('Selamat Mengerjakan!','success');
+        addSecurityListeners();
+    }).catch(function(e){alert("Gagal muat soal: "+e.message)});
+}
+
+function getMapelName(id){var m=[{id:'ppkn',n:'PPKn'},{id:'mat',n:'Matematika'},{id:'bin',n:'B. Indonesia'},{id:'sbd',n:'Seni Budaya'},{id:'ipas',n:'IPAS'},{id:'bsd',n:'B. Sunda'},{id:'bing',n:'B. Inggris'},{id:'pai',n:'PAI'},{id:'pjok',n:'PJOK'}].find(x=>x.id===id);return m?m.n:id}
+
+// === NAVIGASI HORIZONTAL (PAJ & SAT SAMA) ===
+function buildNavigation(){
+    var bar=document.getElementById('navBar');
+    bar.innerHTML='';
+    var num=0;
+
+    // Label PG
+    if(hasPG){
+        var lblPG=document.createElement('div');lblPG.className='nav-section-label';lblPG.textContent='PG';bar.appendChild(lblPG);
+        questionsList.forEach(function(q,idx){
+            if(q.type==='pg'){num++;var d=document.createElement('div');d.className='nav-soal-item';d.textContent=num;d.id='nav-'+idx;d.onclick=function(){loadQuestion(idx)};bar.appendChild(d)}
+        });
+    }
+
+    // Separator
+    if(hasPG&&hasEssay){var sep=document.createElement('div');sep.className='nav-separator';bar.appendChild(sep)}
+
+    // Label Essay
+    if(hasEssay){
+        var lblEs=document.createElement('div');lblEs.className='nav-section-label';lblEs.textContent='Uraian';bar.appendChild(lblEs);
+        questionsList.forEach(function(q,idx){
+            if(q.type==='uraian'){num++;var d=document.createElement('div');d.className='nav-soal-item';d.textContent=num;d.id='nav-'+idx;d.onclick=function(){loadQuestion(idx)};bar.appendChild(d)}
+        });
+    }
+}
+
+function updateProgress(){
+    var answered=Object.keys(answers).filter(function(k){return answers[k]&&String(answers[k]).trim().length>0}).length;
+    var pct=questionsList.length?Math.round(answered/questionsList.length*100):0;
+    document.getElementById('progressBar').style.width=pct+'%';
+}
+
+function scrollNavToActive(){
+    var el=document.getElementById('nav-'+currentQuestionIndex);
+    if(el){el.scrollIntoView({behavior:'smooth',block:'nearest',inline:'center'})}
+}
+
+// === LOAD SOAL ===
+function loadQuestion(index){
+    currentQuestionIndex=index;
+    var q=questionsList[index];
+    var area=document.getElementById('questionArea');
+
+    // Update nav active state
+    document.querySelectorAll('.nav-soal-item').forEach(function(el){el.classList.remove('active')});
+    var navEl=document.getElementById('nav-'+index);
+    if(navEl)navEl.classList.add('active');
+    scrollNavToActive();
+    updateProgress();
+
+    // Hitung nomor tampil (PG & Essay terpisah)
+    var displayNum='';
+    if(q.type==='pg'){var pgIdx=0;for(var i=0;i<index;i++){if(questionsList[i].type==='pg')pgIdx++}displayNum=(pgIdx+1)}
+    else{var esIdx=0;for(var i=0;i<index;i++){if(questionsList[i].type==='uraian')esIdx++}displayNum=(esIdx+1)}
+
+    var sectionLabel=q.type==='pg'?'Pilihan Ganda':'Uraian';
+    var typeBadge=q.type==='pg'?'bg-kopAccent/15 text-kopAccent border-kopAccent/30':'bg-cyan-500/15 text-cyan-400 border-cyan-500/30';
+
+    var h='<div class="fade-up">';
+    // Top info
+    h+='<div class="max-w-[800px] mx-auto mb-5 flex justify-between items-center border-b border-border pb-3">';
+    h+='<div class="flex items-center gap-3"><span class="text-xs px-2.5 py-1 rounded-full border font-bold uppercase tracking-wide '+typeBadge+'">'+sectionLabel+'</span><span class="text-muted text-sm">Soal No. <strong class="text-light">'+displayNum+'</strong></span></div>';
+    h+='<span class="text-xs text-muted">'+Math.round((index+1)/questionsList.length*100)+'%</span>';
+    h+='</div>';
+
+    // Soal Card
+    h+='<div class="soal-card">';
+    h+='<div class="text-base sm:text-lg leading-relaxed text-light font-medium mb-6">'+escHtml(q.text)+'</div>';
+
+    if(q.type==='pg'){
+        var cur=answers[q.id]||'';
+        h+='<div class="space-y-2">';
+        var letters=['A','B','C','D','E'];
+        (q.options||[]).forEach(function(opt,i){
+            var sel=cur===letters[i]?'selected':'';
+            h+='<div onclick="selectOption(\''+q.id+'\',\''+letters[i]+'\')" class="opsi-item '+sel+'">';
+            h+='<div class="opsi-letter">'+letters[i]+'</div>';
+            h+='<div class="pt-0.5 text-sm sm:text-[15px] leading-relaxed">'+escHtml(opt)+'</div>';
+            h+='</div>';
+        });
+        h+='</div>';
+    } else {
+        var curVal=answers[q.id]||'';
+        h+='<textarea id="essay-'+q.id+'" class="essay-area" placeholder="Ketik jawaban Anda di sini..." oninput="saveEssay(\''+q.id+'\')">'+escHtml(curVal)+'</textarea>';
+        h+='<div class="text-right text-xs text-muted mt-2"><span id="charCount-'+q.id+'">'+curVal.length+'</span> karakter</div>';
+    }
+    h+='</div>';
+
+    // Navigation Buttons
+    h+='<div class="max-w-[800px] mx-auto mt-6 flex justify-between items-center gap-3">';
+    h+='<button onclick="prevQuestion()" '+(index===0?'disabled':'')+' class="nav-btn"><i class="fas fa-arrow-left"></i><span class="hidden sm:inline">Sebelumnya</span></button>';
+    if(index<questionsList.length-1){
+        h+='<button onclick="nextQuestion()" class="nav-btn" style="border-color:#c9a84c;color:#c9a84c"><span class="hidden sm:inline">Selanjutnya</span><i class="fas fa-arrow-right"></i></button>';
+    } else {
+        h+='<button onclick="submitExam()" class="nav-btn finish"><i class="fas fa-check-circle"></i>Selesai Ujian</button>';
+    }
+    h+='</div>';
+    h+='</div>';
+
+    area.innerHTML=h;
+    area.scrollTop=0;
+
+    // Focus essay
+    if(q.type==='uraian'){setTimeout(function(){var ta=document.getElementById('essay-'+q.id);if(ta)ta.focus()},120)}
+}
+
+function selectOption(qId,val){
+    answers[qId]=val;
+    var navEl=document.getElementById('nav-'+currentQuestionIndex);
+    if(navEl)navEl.classList.add('answered');
+    updateProgress();
+    // Re-render untuk update selected state
+    loadQuestion(currentQuestionIndex);
+}
+function saveEssay(qId){
+    var el=document.getElementById('essay-'+qId);
+    if(!el)return;
+    answers[qId]=el.value;
+    var navEl=document.getElementById('nav-'+currentQuestionIndex);
+    if(navEl){if(el.value.trim().length>0)navEl.classList.add('answered');else navEl.classList.remove('answered')}
+    // Update char count
+    var cc=document.getElementById('charCount-'+qId);if(cc)cc.textContent=el.value.length;
+    updateProgress();
+}
+function nextQuestion(){if(currentQuestionIndex<questionsList.length-1)loadQuestion(currentQuestionIndex+1)}
+function prevQuestion(){if(currentQuestionIndex>0)loadQuestion(currentQuestionIndex-1)}
+
+// Keyboard navigation
+document.addEventListener('keydown',function(e){
+    if(!isExamActive)return;
+    // Jangan intercept jika sedang mengetik essay
+    var active=document.activeElement;if(active&&active.tagName==='TEXTAREA')return;
+    if(e.key==='ArrowRight'||e.key==='ArrowDown'){e.preventDefault();nextQuestion()}
+    if(e.key==='ArrowLeft'||e.key==='ArrowUp'){e.preventDefault();prevQuestion()}
+});
+
+// === TIMER ===
+function startTimer(duration){
+    var timer=duration;var display=document.getElementById('timerDisplay');
+    clearInterval(timerInterval);
+    timerInterval=setInterval(function(){
+        var m=parseInt(timer/60,10);var s=parseInt(timer%60,10);
+        display.textContent=(m<10?'0'+m:m)+':'+(s<10?'0'+s:s);
+        // Warning saat < 5 menit
+        if(timer<=300&&timer>0){display.style.color='#ef4444'}
+        if(--timer<0){clearInterval(timerInterval);submitExam(true)}
+    },1000);
+}
+
+// === SECURITY ===
+function requestFullScreen(){var e=document.documentElement;if(e.requestFullscreen)e.requestFullscreen();else if(e.webkitRequestFullscreen)e.webkitRequestFullscreen();else if(e.msRequestFullscreen)e.msRequestFullscreen()}
+function addSecurityListeners(){
+    window.addEventListener('blur',function(){if(isExamActive){warningCount++;document.getElementById('warningModal').classList.add('active')}});
+    window.addEventListener('keydown',function(e){
+        if((e.ctrlKey||e.metaKey)&&(e.key==='c'||e.key==='u'||e.key==='p')||e.key==='F12'){e.preventDefault();showToast('Tindakan ini dilarang saat ujian!','warning')}
+    });
+}
+function resumeExam(){document.getElementById('warningModal').classList.remove('active');requestFullScreen()}
+
+// === SUBMIT ===
+function submitExam(force){
+    if(!force&&!confirm("Yakin ingin mengakhiri ujian?"))return;
+    isExamActive=false;clearInterval(timerInterval);
+    try{if(document.exitFullscreen)document.exitFullscreen();else if(document.webkitExitFullscreen)document.webkitExitFullscreen()}catch(e){}
+
+    var score=0,maxScore=0,correctCount=0,wrongCount=0;
+    questionsList.forEach(function(q){
+        if(q.type==='pg'){
+            var sps=q.score||1;maxScore+=sps;
+            var kunci=(q.correctKey||q.answer)?String(q.correctKey||q.answer).toUpperCase():'';
+            var jawab=answers[q.id]?String(answers[q.id]).toUpperCase():'';
+            if(kunci&&jawab&&kunci===jawab){score+=sps;correctCount++}else{wrongCount++}
+        }
+    });
+    var finalScore=maxScore>0?Math.round(score/maxScore*100):0;
+    var isLulus=finalScore>=70;
+
+    var resultData={siswaId:currentStudent.id,siswaNama:currentStudent.nama,nisn:currentStudent.nisn,mapel:currentExam.mapel,kelas:currentExam.kelas,isPAJ:currentExam.isPAJ,token:currentExam.token,answers:answers,scorePG:finalScore,passedPG:isLulus,submittedAt:firebase.firestore.FieldValue.serverTimestamp(),warningCount:warningCount};
+
+    db.collection('exam_results').add(resultData).then(function(){
+        document.getElementById('examSection').classList.add('hidden');
+        document.getElementById('resultModal').classList.remove('hidden');
+        document.getElementById('scoreValue').innerText=finalScore;
+        document.getElementById('detailCorrect').innerText=correctCount;
+        document.getElementById('detailWrong').innerText=wrongCount;
+        var circle=document.getElementById('scoreCircle');
+        var statusTxt=document.getElementById('resultStatus');
+        var subTxt=document.getElementById('resultSub');
+        if(isLulus){circle.classList.add('success');statusTxt.innerText='TUNTAS (PG)';statusTxt.className='text-lg font-bold uppercase tracking-widest mb-4 text-success';subTxt.innerText='Nilai PG memenuhi KKM.'}
+        else{circle.classList.add('fail');statusTxt.innerText='REMEDIAL (PG)';statusTxt.className='text-lg font-bold uppercase tracking-widest mb-4 text-danger';subTxt.innerText='Nilai PG di bawah KKM (70).'}
+        if(hasEssay)subTxt.innerText+='\nSoal Essay dikoreksi manual oleh Guru.';
+    }).catch(function(e){console.error(e);alert("Gagal kirim jawaban! Screenshot dan tunjukkan ke guru.");document.write('<pre style="color:white;background:#111;padding:20px">'+JSON.stringify(resultData,null,2)+'</pre>')});
+}
+</script>
+</body>
+</html>
