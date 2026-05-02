@@ -187,7 +187,7 @@ try{firebase.initializeApp(firebaseConfig);db=firebase.firestore();db.settings({
 // ================================================================
 var currentStudent=null,currentExam=null,questionsList=[],answers={},currentQuestionIndex=0,timerInterval,warningCount=0,isExamActive=false;
 var hasEssay=false,hasPG=false,pgCount=0,esCount=0;
-var examKecamatanId=null; // PERUBAHAN: Simpan kecamatanId dari token
+var examKecamatanId=null;
 
 // ================================================================
 // UTILS
@@ -206,7 +206,7 @@ function getMapelName(id){
     return m?m.n:id;
 }
 
-// PERUBAHAN: Cache nama kecamatan
+// Cache nama kecamatan
 var kecamatanCache={};
 function getKecNama(id){
     if(!id) return '';
@@ -218,7 +218,6 @@ function loadKecamatanNames(){
         snap.docs.forEach(function(d){
             kecamatanCache[d.id]=d.data().nama;
         });
-        // Update badge jika sudah ada di UI
         updateKecBadge();
     }).catch(function(){});
 }
@@ -246,7 +245,7 @@ function handleLogin(){
         var tokenDoc=ts.docs[0];
         var tokenData=tokenDoc.data();
 
-        // PERUBAHAN: Ambil kecamatanId dari token
+        // Ambil kecamatanId dari token
         examKecamatanId=tokenData.kecamatanId||null;
 
         db.collection('students').where('nisn','==',nisn).limit(1).get().then(function(ss){
@@ -255,7 +254,7 @@ function handleLogin(){
             var studentDoc=ss.docs[0];
             var studentData=studentDoc.data();
 
-            // PERUBAHAN: Validasi kecamatan siswa == kecamatan token
+            // Validasi kecamatan siswa == kecamatan token
             if(examKecamatanId && studentData.kecamatanId && studentData.kecamatanId!==examKecamatanId){
                 setLoading(btn,false,'<i class="fas fa-sign-in-alt mr-2"></i>MULAI UJIAN');
                 showToast('Token untuk kecamatan berbeda! Token tidak valid untuk Anda.','error');
@@ -290,9 +289,7 @@ function handleLogin(){
     });
 }
 
-// ================================================================
-// PERUBAHAN: Update badge kecamatan di UI
-// ================================================================
+// Update badge kecamatan di UI
 function updateKecBadge(){
     var el=document.getElementById('kecBadgeExam');
     if(!el||!examKecamatanId) return;
@@ -307,13 +304,11 @@ function updateKecBadge(){
 function startExamFlow(){
     var colName=currentExam.isPAJ?'questions_paj':'questions';
 
-    // PERUBAHAN: Tampilkan badge kecamatan (pakai cache dulu)
     updateKecBadge();
 
-    // PERUBAHAN INTI: Query soal dengan filter kecamatanId
+    // Query soal dengan filter kecamatanId
     var query=db.collection(colName).where('mapel','==',currentExam.mapel).where('kelas','==',currentExam.kelas);
 
-    // Jika token punya kecamatanId, tambahkan filter kecamatan
     if(examKecamatanId){
         query=query.where('kecamatanId','==',examKecamatanId);
     }
@@ -327,10 +322,10 @@ function startExamFlow(){
 
         var allQ=snap.docs.map(function(d){return Object.assign({id:d.id},d.data())});
 
-        // PERUBAHAN: Double-check filter kelas (jaga-jaga)
+        // Double-check filter kelas
         var filteredQ=allQ.filter(function(q){return q.kelas===currentExam.kelas});
 
-        // PERUBAHAN: Double-check filter kecamatanId (jaga-jaga jika query tidak support compound)
+        // Double-check filter kecamatanId
         if(examKecamatanId){
             filteredQ=filteredQ.filter(function(q){
                 return q.kecamatanId===examKecamatanId;
@@ -353,21 +348,17 @@ function startExamFlow(){
 
         questionsList=filteredQ;
 
-        // Hitung PG & Essay
         pgCount=questionsList.filter(function(q){return q.type==='pg'}).length;
         esCount=questionsList.filter(function(q){return q.type==='uraian'}).length;
         hasPG=pgCount>0;
         hasEssay=esCount>0;
 
-        // Sembunyikan login, tampilkan ujian
         document.getElementById('loginSection').classList.add('hidden');
         document.getElementById('examSection').classList.remove('hidden');
 
-        // PERUBAHAN: Label judul ujian
         var titleLabel=currentExam.isPAJ?'Penilaian Akhir Jenjang (PAJ)':'Sumatif Akhir Tahun';
         document.getElementById('examTitleLabel').textContent=titleLabel+' ';
 
-        // Info header
         var rombelText=currentStudent.rombel?' Rombel '+currentStudent.rombel:'';
         var kecText=examKecamatanId?' ['+getKecNama(examKecamatanId)+']':'';
         document.getElementById('examInfoDetail').textContent=
@@ -383,7 +374,6 @@ function startExamFlow(){
 
     }).catch(function(e){
         console.error(e);
-        // PERUBAHAN: Fallback jika compound query gagal (pakai client-side filter)
         if(examKecamatanId && String(e.message||'').indexOf('FAILED_PRECONDITION')>-1){
             console.warn('Compound query gagal, fallback ke client-side filter');
             fallbackLoadQuestions(colName);
@@ -394,7 +384,7 @@ function startExamFlow(){
     });
 }
 
-// PERUBAHAN: Fallback loader jika compound query tidak didukung (indeks belum dibuat)
+// Fallback loader jika compound query tidak didukung
 function fallbackLoadQuestions(colName){
     db.collection(colName).where('mapel','==',currentExam.mapel).get().then(function(snap){
         if(snap.empty){
@@ -404,7 +394,6 @@ function fallbackLoadQuestions(colName){
 
         var allQ=snap.docs.map(function(d){return Object.assign({id:d.id},d.data())});
 
-        // Filter kelas + kecamatan di client-side
         var filteredQ=allQ.filter(function(q){
             if(q.kelas!==currentExam.kelas) return false;
             if(examKecamatanId && q.kecamatanId!==examKecamatanId) return false;
@@ -515,7 +504,6 @@ function loadQuestion(index){
             if(i>=5)return;
             var letter=letters[i];
             var isSel=curAns===letter?'selected':'';
-            // PERUBAHAN: Tampilkan gambar opsi jika ada
             var imgHtml='';
             if(q.optionImages&&q.optionImages[i]){
                 imgHtml='<img src="'+q.optionImages[i]+'" style="max-width:120px;max-height:80px;object-fit:contain;border:1px solid #2a3f5f;border-radius:4px;margin-top:6px;display:block" onerror="this.style.display=\'none\'">';
@@ -555,7 +543,7 @@ function selectOption(qId,val){
 }
 
 function saveEssay(qId){
-    var el=document.getElementById('essay-'+q.id);if(!el)return;
+    var el=document.getElementById('essay-'+qId);if(!el)return;
     answers[qId]=el.value;
     var navEl=document.getElementById('nav-'+currentQuestionIndex);
     if(navEl){if(el.value.trim().length>0)navEl.classList.add('answered');else navEl.classList.remove('answered')}
@@ -628,7 +616,6 @@ function submitExam(forced){
     var finalScorePG=maxScorePoints>0?Math.round(scorePoints/maxScorePoints*100):0;
     var isLulus=finalScorePG>=70;
 
-    // PERUBAHAN: Simpan kecamatanId ke hasil
     var resultData={
         siswaId:currentStudent.id,
         siswaNama:currentStudent.nama,
@@ -675,7 +662,7 @@ function submitExam(forced){
 }
 
 // ================================================================
-// INIT: Muat nama kecamatan sebelum apapun
+// INIT
 // ================================================================
 window.onload=function(){loadKecamatanNames()};
 </script>
