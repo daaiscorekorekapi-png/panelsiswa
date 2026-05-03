@@ -33,7 +33,6 @@ body{font-family:'Source Sans 3',sans-serif;background:#0f1923;color:#e8ecf1;min
 
 .exam-shell{display:flex;flex-direction:column;height:100vh;height:100dvh;width:100vw;position:relative;overflow:hidden}
 
-/* Header */
 .exam-hdr{background:linear-gradient(135deg,#1a2744 0%,#1e2d4a 100%);border-bottom:1px solid #2a3f5f;padding:8px 12px;display:flex;align-items:center;justify-content:space-between;flex-shrink:0;z-index:20;gap:8px;min-height:52px}
 .hdr-info{flex:1;min-width:0;display:flex;align-items:center;gap:8px}
 .hdr-icon{width:32px;height:32px;min-width:32px;border-radius:8px;background:rgba(201,168,76,.12);display:flex;align-items:center;justify-content:center}
@@ -46,11 +45,9 @@ body{font-family:'Source Sans 3',sans-serif;background:#0f1923;color:#e8ecf1;min
 .hdr-btn{width:38px;height:38px;min-width:38px;border-radius:8px;background:rgba(239,68,68,.08);border:1.5px solid rgba(239,68,68,.35);color:#ef4444;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:14px;transition:all .15s}
 .hdr-btn:active{background:#ef4444;color:white;transform:scale(.92)}
 
-/* Progress */
 .prog-track{height:3px;background:#1a2744;flex-shrink:0}
 .prog-fill{height:100%;background:linear-gradient(90deg,#c9a84c,#22c55e);transition:width .3s;border-radius:0 2px 2px 0}
 
-/* Nav bar */
 .nav-rail{display:flex;gap:5px;overflow-x:auto;padding:6px 12px;flex-shrink:0;scroll-behavior:smooth;-webkit-overflow-scrolling:touch}
 .nav-rail::-webkit-scrollbar{display:none}
 .nav-dot{width:36px;height:36px;min-width:36px;display:flex;align-items:center;justify-content:center;border-radius:8px;background:#182538;border:1.5px solid #2a3f5f;color:#7a8ba5;cursor:pointer;transition:all .12s;font-weight:700;font-size:11px;-webkit-tap-highlight-color:transparent}
@@ -61,37 +58,29 @@ body{font-family:'Source Sans 3',sans-serif;background:#0f1923;color:#e8ecf1;min
 .nav-sep{width:1px;min-width:1px;background:#2a3f5f;margin:6px 4px;flex-shrink:0}
 .nav-lbl{font-size:8px;text-transform:uppercase;letter-spacing:1px;color:#4b5e78;font-weight:700;padding:6px 2px;white-space:nowrap;min-width:fit-content;display:flex;align-items:center}
 
-/* Main scroll */
 .exam-body{flex:1;overflow-y:auto;overflow-x:hidden;padding:16px 12px 100px;-webkit-overflow-scrolling:touch;position:relative}
 .exam-body::before{content:'';position:fixed;top:-20%;left:-20%;width:50%;height:50%;background:radial-gradient(circle,rgba(201,168,76,.025) 0%,transparent 70%);pointer-events:none;z-index:0}
 .exam-body::after{content:'';position:fixed;bottom:-20%;right:-20%;width:50%;height:50%;background:radial-gradient(circle,rgba(34,197,94,.015) 0%,transparent 70%);pointer-events:none;z-index:0}
 
-/* Soal card */
 .q-card{background:linear-gradient(160deg,#182538 0%,#1a2840 100%);border:1px solid #2a3f5f;border-radius:14px;padding:20px 16px;max-width:600px;margin:0 auto;width:100%;position:relative;z-index:1;box-shadow:0 6px 24px rgba(0,0,0,.18)}
 
-/* Nomor soal dekoratif */
 .q-num{display:inline-flex;align-items:center;justify-content:center;width:32px;height:32px;border-radius:8px;background:linear-gradient(135deg,#c9a84c,#b8943f);color:#1a2744;font-weight:800;font-size:14px;font-family:'Playfair Display',serif;flex-shrink:0;box-shadow:0 2px 8px rgba(201,168,76,.25)}
 
-/* Gambar soal */
 .q-img{margin:10px 0 4px;border-radius:8px;overflow:hidden;border:1px solid #2a3f5f;background:#0f1923;display:block;max-width:100%}
 .q-img img{display:block;max-width:100%;max-height:220px;width:auto;height:auto;object-fit:contain;margin:0 auto}
 
-/* Gambar opsi */
 .opt-img{margin-top:6px;border-radius:6px;overflow:hidden;border:1px solid #2a3f5f;background:#0f1923;display:block;max-width:150px}
 .opt-img img{display:block;max-width:100%;max-height:90px;width:auto;height:auto;object-fit:contain}
 
-/* Opsi PG */
 .opt-row{display:flex;align-items:flex-start;gap:12px;padding:12px;border:1.5px solid #2a3f5f;border-radius:10px;cursor:pointer;transition:all .15s;margin-bottom:6px;background:rgba(15,25,35,.5);-webkit-tap-highlight-color:transparent}
 .opt-row:active{transform:scale(.98)}
 .opt-row.picked{border-color:#c9a84c;background:rgba(201,168,76,.07);box-shadow:inset 0 0 0 1px rgba(201,168,76,.1)}
 .opt-ltr{width:28px;height:28px;min-width:28px;border-radius:7px;background:#182538;border:1.5px solid #2a3f5f;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:12px;color:#7a8ba5;transition:all .15s}
 .opt-row.picked .opt-ltr{background:#c9a84c;border-color:#c9a84c;color:#1a2744}
 
-/* Essay */
 .essay-box{width:100%;min-height:160px;background:rgba(15,25,35,.5);border:1.5px solid #2a3f5f;color:#e8ecf1;padding:12px;border-radius:10px;font-family:inherit;font-size:15px;resize:none;line-height:1.7;-webkit-user-select:text;user-select:text;-webkit-touch-callout:default}
 .essay-box:focus{outline:none;border-color:#c9a84c;box-shadow:0 0 0 3px rgba(201,168,76,.1)}
 
-/* Bottom nav fixed */
 .bot-nav{position:fixed;bottom:0;left:0;right:0;background:linear-gradient(180deg,rgba(15,25,35,.92) 0%,rgba(15,25,35,.98) 100%);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border-top:1px solid #2a3f5f;padding:10px 12px;padding-bottom:max(10px,env(safe-area-inset-bottom));display:flex;justify-content:space-between;align-items:center;gap:10px;z-index:30}
 .b-nav-btn{display:flex;align-items:center;gap:6px;padding:10px 16px;border-radius:8px;border:1.5px solid #2a3f5f;background:#182538;color:#e8ecf1;cursor:pointer;font-size:13px;font-weight:600;transition:all .12s;-webkit-tap-highlight-color:transparent}
 .b-nav-btn:active{transform:scale(.94)}
@@ -100,18 +89,14 @@ body{font-family:'Source Sans 3',sans-serif;background:#0f1923;color:#e8ecf1;min
 .b-nav-btn.red{background:rgba(239,68,68,.08);border-color:rgba(239,68,68,.35);color:#ef4444}
 .b-nav-btn.red:active{background:#ef4444;color:white}
 
-/* Section badge */
 .sec-badge{display:inline-flex;align-items:center;gap:5px;padding:3px 10px;border-radius:16px;font-size:10px;font-weight:700;letter-spacing:.4px;text-transform:uppercase}
 
-/* Counter */
 .cnt-box{display:flex;align-items:center;gap:3px;padding:3px 8px;border-radius:6px;background:rgba(15,25,35,.4);border:1px solid #2a3f5f;font-size:10px;color:#7a8ba5;font-weight:600}
 .cnt-box .v{color:#e8ecf1;font-weight:700}
 
-/* Warning */
 .warn-screen{position:fixed;inset:0;background:rgba(220,38,38,.97);z-index:200;display:none;align-items:center;justify-content:center;flex-direction:column;color:white;text-align:center;padding:24px}
 .warn-screen.on{display:flex}
 
-/* Result */
 .res-overlay{position:fixed;inset:0;background:rgba(0,0,0,.94);z-index:100;display:none;align-items:center;justify-content:center;backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);padding:20px}
 .res-overlay.on{display:flex}
 .res-card{background:linear-gradient(160deg,#182538,#1a2840);width:100%;max-width:420px;border-radius:20px;padding:32px 24px;text-align:center;border:2px solid #2a3f5f;box-shadow:0 0 50px rgba(201,168,76,.1);animation:resPop .4s cubic-bezier(.175,.885,.32,1.275)}
@@ -128,7 +113,6 @@ body{font-family:'Source Sans 3',sans-serif;background:#0f1923;color:#e8ecf1;min
 
 @keyframes pulse{0%,100%{opacity:1}50%{opacity:.5}}
 
-/* Safe area */
 @supports(padding:max(0px)){.bot-nav{padding-bottom:max(12px,env(safe-area-inset-bottom))}.exam-hdr{padding-top:max(8px,env(safe-area-inset-top))}}
 </style>
 </head>
@@ -160,7 +144,7 @@ body{font-family:'Source Sans 3',sans-serif;background:#0f1923;color:#e8ecf1;min
             <div><label class="block text-[10px] font-bold text-muted uppercase tracking-wider mb-1.5">Token Ujian</label><input type="text" id="inToken" class="input-field text-center text-lg font-mono tracking-[.25em] uppercase" placeholder="XXXXXX" maxlength="6" inputmode="text"></div>
             <button onclick="doLogin()" id="btnGo" class="btn-primary mt-5"><i class="fas fa-sign-in-alt mr-2"></i>MULAI UJIAN</button>
         </div>
-        <div class="mt-5 text-center text-[10px] text-muted leading-relaxed"><i class="fas fa-shield-alt mr-1 text-kopAccent/40"></i>Sistem termonitor. Kecurangan akan tercatat.</div>
+        <div class="mt-5 text-center text-[10px] text-muted leading-relaxed"><i class="fas fa-shield-alt mr-1 text-kopAccent/40"></i>Sistem termonitor. Token hanya berlaku untuk sekolah penerbitnya.</div>
     </div>
 </div>
 
@@ -209,7 +193,7 @@ var db;
 try{firebase.initializeApp(firebaseConfig);db=firebase.firestore();db.settings({experimentalAutoDetectLongPolling:true,cacheSizeBytes:firebase.firestore.CACHE_SIZE_UNLIMITED})}catch(e){console.error(e);document.body.innerHTML='<div style="padding:40px;text-align:center;color:white"><h2>Gagal koneksi database</h2><p>'+e.message+'</p></div>'}
 
 var stu=null,exam=null,qList=[],ans={},qIdx=0,timerInt,warnCnt=0,active=false;
-var hasEs=false,hasPg=false,nPg=0,nEs=0,examKecId=null,kecCache={};
+var hasEs=false,hasPg=false,nPg=0,nEs=0,examKecId=null,examNpsn=null,kecCache={};
 
 /* Utilitas */
 function toast(m,t){t=t||'success';var c=document.getElementById('toastBox'),e=document.createElement('div');var i=t==='success'?'check-circle':t==='error'?'times-circle':'exclamation-triangle';e.className='toast toast-'+t;e.innerHTML='<i class="fas fa-'+i+'"></i><span>'+m+'</span>';c.appendChild(e);setTimeout(function(){if(e.parentNode)e.remove()},4000)}
@@ -224,7 +208,7 @@ function updKecTag(){var el=document.getElementById('tagKec');if(!el||!examKecId
 (function(){var p=new URLSearchParams(window.location.search);var n=p.get('nisn');if(n)document.getElementById('inNisn').value=n})();
 
 /* ================================================================
-   LOGIN
+   LOGIN — VALIDASI 3 LAPIS: NISN + Token + NPSN Sekolah
    ================================================================ */
 function doLogin(){
     var nisn=document.getElementById('inNisn').value.trim();
@@ -234,17 +218,46 @@ function doLogin(){
     if(!tok){toast('Token wajib diisi!','error');return}
     if(nisn.length<5){toast('NISN terlalu pendek!','error');return}
     btnState(btn,true,'MEMERIKSA...');
+
+    /* Langkah 1: Cari token → ambil kecamatanId & npsn penerbit token */
     db.collection('exam_tokens').where('token','==',tok).limit(1).get().then(function(ts){
         if(ts.empty){btnState(btn,false,'<i class="fas fa-sign-in-alt mr-2"></i>MULAI UJIAN');toast('Token tidak valid!','error');return}
-        var td=ts.docs[0].data();examKecId=td.kecamatanId||null;
-        db.collection('students').where('nisn','==',nisn).limit(1).get().then(function(ss){
+        var td=ts.docs[0].data();
+        examKecId=td.kecamatanId||null;
+        examNpsn=td.npsn||null;
+
+        /* Langkah 2: Cari siswa berdasarkan NISN */
+        db.collection('students').where('nisn','==',nisn).get().then(function(ss){
             if(ss.empty){btnState(btn,false,'<i class="fas fa-sign-in-alt mr-2"></i>MULAI UJIAN');toast('NISN tidak terdaftar!','error');return}
-            var sd=ss.docs[0].data();
-            if(examKecId&&sd.kecamatanId&&sd.kecamatanId!==examKecId){btnState(btn,false,'<i class="fas fa-sign-in-alt mr-2"></i>MULAI UJIAN');toast('Token untuk kecamatan lain!','error');return}
-            if(sd.kelas!==td.kelas){btnState(btn,false,'<i class="fas fa-sign-in-alt mr-2"></i>MULAI UJIAN');toast('Token untuk kelas '+td.kelas,'error');return}
+
+            /* Langkah 3: Cari siswa yang cocok dengan kecamatanId + npsn + kelas dari token */
+            var found=null;
+            ss.docs.forEach(function(d){
+                var sd=d.data();
+                /* Cocokkan kecamatan (jika token punya kecamatanId) */
+                if(examKecId&&sd.kecamatanId&&sd.kecamatanId!==examKecId)return;
+                /* Cocokkan NPSN sekolah (jika token punya npsn) — INI YANG PENTING */
+                if(examNpsn&&sd.npsn&&sd.npsn!==examNpsn)return;
+                /* Cocokkan kelas */
+                if(sd.kelas!==td.kelas)return;
+                found=Object.assign({id:d.id},sd);
+            });
+
+            if(!found){
+                btnState(btn,false,'<i class="fas fa-sign-in-alt mr-2"></i>MULAI UJIAN');
+                /* Pesan error spesifik agar guru tahu apa masalahnya */
+                if(examNpsn){
+                    toast('Token bukan untuk sekolah Anda!','error');
+                }else{
+                    toast('Token tidak cocok dengan data Anda!','error');
+                }
+                return;
+            }
+
+            /* Langkah 4: Cek apakah sudah pernah mengerjakan */
             db.collection('exam_results').where('token','==',tok).where('nisn','==',nisn).limit(1).get().then(function(ex){
                 if(!ex.empty){btnState(btn,false,'<i class="fas fa-sign-in-alt mr-2"></i>MULAI UJIAN');toast('Sudah pernah mengerjakan!','error');return}
-                exam=td;stu=Object.assign({id:ss.docs[0].id},sd);
+                exam=td;stu=found;
                 btnState(btn,false,'<i class="fas fa-sign-in-alt mr-2"></i>MULAI UJIAN');beginFlow();
             }).catch(function(e){btnState(btn,false,'<i class="fas fa-sign-in-alt mr-2"></i>MULAI UJIAN');toast('Gagal verifikasi','error')});
         }).catch(function(e){btnState(btn,false,'<i class="fas fa-sign-in-alt mr-2"></i>MULAI UJIAN');toast('Gagal cari siswa','error')});
@@ -252,7 +265,7 @@ function doLogin(){
 }
 
 /* ================================================================
-   AMBIL SOAL
+   AMBIL SOAL — Filter: kecamatanId + npsn
    ================================================================ */
 function beginFlow(){
     var col=exam.isPAJ?'questions_paj':'questions';updKecTag();
@@ -261,7 +274,13 @@ function beginFlow(){
     q.get().then(function(snap){
         if(snap.empty){fallback(col);return}
         var all=snap.docs.map(function(d){return Object.assign({id:d.id},d.data())});
-        var f=all.filter(function(x){return x.kelas===exam.kelas&&(!examKecId||x.kecamatanId===examKecId)});
+        /* Filter ganda: kelas + kecamatanId + npsn */
+        var f=all.filter(function(x){
+            if(x.kelas!==exam.kelas)return false;
+            if(examKecId&&x.kecamatanId!==examKecId)return false;
+            if(examNpsn&&x.npsn!==examNpsn)return false;
+            return true;
+        });
         f.sort(function(a,b){if(a.type!==b.type)return a.type==='pg'?-1:1;var ta=a.createdAt?a.createdAt.toDate():new Date(0);var tb=b.createdAt?b.createdAt.toDate():new Date(0);return ta-tb});
         if(!f.length){fallback(col);return}boot(f);
     }).catch(function(e){if(examKecId&&String(e.message||'').indexOf('FAILED_PRECONDITION')>-1){fallback(col)}else{console.error(e);alert('Gagal: '+e.message);location.reload()}});
@@ -270,9 +289,14 @@ function fallback(col){
     db.collection(col).where('mapel','==',exam.mapel).get().then(function(snap){
         if(snap.empty){alert('Tidak ada soal.');location.reload();return}
         var all=snap.docs.map(function(d){return Object.assign({id:d.id},d.data())});
-        var f=all.filter(function(x){return x.kelas===exam.kelas&&(!examKecId||x.kecamatanId===examKecId)});
+        var f=all.filter(function(x){
+            if(x.kelas!==exam.kelas)return false;
+            if(examKecId&&x.kecamatanId!==examKecId)return false;
+            if(examNpsn&&x.npsn!==examNpsn)return false;
+            return true;
+        });
         f.sort(function(a,b){if(a.type!==b.type)return a.type==='pg'?-1:1;var ta=a.createdAt?a.createdAt.toDate():new Date(0);var tb=b.createdAt?b.createdAt.toDate():new Date(0);return ta-tb});
-        if(!f.length){alert('Belum ada soal dari Kec. '+kecName(examKecId));location.reload();return}boot(f);
+        if(!f.length){alert('Belum ada soal dari sekolah Anda.');location.reload();return}boot(f);
     }).catch(function(e2){console.error(e2);alert('Gagal: '+e2.message);location.reload()});
 }
 
@@ -321,27 +345,19 @@ function renderQ(idx){
     scrollNav();updProg();
     document.getElementById('cntCur').textContent=idx+1;
 
-    /* Nomor tampil per section */
     var dn=1;if(q.type==='pg'){for(var i=0;i<idx;i++){if(qList[i].type==='pg')dn++}}else{for(var i=0;i<idx;i++){if(qList[i].type==='uraian')dn++}}
     var totSec=q.type==='pg'?nPg:nEs;
     var isPg=q.type==='pg';
 
-    /* Badge */
     var bCls=isPg?'bg-kopAccent/10 text-kopAccent border border-kopAccent/20':'bg-cyan-500/10 text-cyan-400 border border-cyan-500/20';
     var bIco=isPg?'fa-list-ul':'fa-pen-fancy';
     var bTxt=isPg?'Pilihan Ganda':'Uraian';
 
     var h='<div class="fup">';
-
-    /* Info bar */
     h+='<div class="max-w-[600px] mx-auto mb-4 flex justify-between items-center">';
     h+='<div class="flex items-center gap-2"><span class="sec-badge '+bCls+'"><i class="fas '+bIco+' text-[9px]"></i>'+bTxt+'</span><span class="text-muted text-xs">No. <strong class="text-light">'+dn+'</strong> / '+totSec+'</span></div>';
     h+='</div>';
-
-    /* Card */
     h+='<div class="q-card">';
-
-    /* Teks soal + gambar */
     h+='<div class="flex items-start gap-2.5 mb-5">';
     h+='<div class="q-num">'+dn+'</div>';
     h+='<div class="flex-1 min-w-0">';
@@ -349,7 +365,6 @@ function renderQ(idx){
     if(q.image) h+='<div class="q-img"><img src="'+esc(q.image)+'" alt="Gambar Soal" onerror="this.parentElement.style.display=\'none\'"></div>';
     h+='</div></div>';
 
-    /* Opsi PG */
     if(isPg){
         var cur=ans[q.id]||'';
         h+='<div class="space-y-1.5 mt-3">';
@@ -361,14 +376,12 @@ function renderQ(idx){
             h+='<div class="opt-ltr">'+ltr+'</div>';
             h+='<div class="flex-1 min-w-0 pt-0.5">';
             h+='<div class="text-sm leading-relaxed">'+esc(opt)+'</div>';
-            /* Gambar opsi: cek optionImages dan option_images */
             var oi=(q.optionImages&&q.optionImages[oi])||(q.option_images&&q.option_images[oi])||null;
             if(oi) h+='<div class="opt-img"><img src="'+esc(oi)+'" alt="Opsi '+ltr+'" onerror="this.parentElement.style.display=\'none\'"></div>';
             h+='</div></div>';
         });
         h+='</div>';
     }else{
-        /* Uraian */
         var cv=ans[q.id]||'';
         h+='<div class="mt-3">';
         h+='<textarea id="es-'+q.id+'" class="essay-box" placeholder="Tulis jawaban Anda di sini..." oninput="saveEs(\''+q.id+'\')">'+esc(cv)+'</textarea>';
@@ -379,10 +392,8 @@ function renderQ(idx){
     }
 
     h+='</div></div>';
-
     area.innerHTML=h;area.scrollTop=0;
 
-    /* Update bottom nav */
     var bP=document.getElementById('bPrev'),bN=document.getElementById('bNext');
     bP.disabled=idx===0;
     if(idx<qList.length-1){
@@ -390,7 +401,6 @@ function renderQ(idx){
     }else{
         bN.className='b-nav-btn red';bN.innerHTML='<i class="fas fa-check-circle mr-1"></i>Selesai';bN.onclick=function(){doSubmit()};
     }
-
     if(!isPg)setTimeout(function(){var ta=document.getElementById('es-'+q.id);if(ta)ta.focus()},120);
 }
 
@@ -410,7 +420,7 @@ function saveEs(qId){
 function goNext(){if(qIdx<qList.length-1)renderQ(qIdx+1)}
 function goPrev(){if(qIdx>0)renderQ(qIdx-1)}
 
-/* Swipe gesture untuk navigasi soal */
+/* Swipe gesture */
 var touchStartX=0,touchStartY=0,swiping=false;
 document.addEventListener('touchstart',function(e){
     if(!active)return;var t=e.touches[0];touchStartX=t.clientX;touchStartY=t.clientY;swiping=true;
@@ -418,15 +428,12 @@ document.addEventListener('touchstart',function(e){
 document.addEventListener('touchend',function(e){
     if(!active||!swiping)return;swiping=false;
     var t=e.changedTouches[0];var dx=t.clientX-touchStartX;var dy=t.clientY-touchStartY;
-    /* Hanya swipe horizontal yang dominan */
     if(Math.abs(dx)>60&&Math.abs(dx)>Math.abs(dy)*1.5){
         var active=document.activeElement;
-        if(active&&(active.tagName==='TEXTAREA'||active.tagName==='INPUT'))return; // Jangan swipe saat menulis
+        if(active&&(active.tagName==='TEXTAREA'||active.tagName==='INPUT'))return;
         if(dx<0)goNext();else goPrev();
     }
 },{passive:true});
-
-/* Keyboard nav (untuk tablet dengan keyboard) */
 document.addEventListener('keydown',function(e){
     if(!active)return;var a=document.activeElement;
     if(a&&(a.tagName==='TEXTAREA'||a.tagName==='INPUT'))return;
@@ -451,24 +458,18 @@ function startClock(sec){
    ================================================================ */
 function goFS(){var el=document.documentElement;try{if(el.requestFullscreen)el.requestFullscreen();else if(el.webkitRequestFullscreen)el.webkitRequestFullscreen()}catch(e){}}
 function addSec(){
-    /* Deteksi keluar tab/jendela */
     document.addEventListener('visibilitychange',function(){
         if(!active)return;
         if(document.hidden){warnCnt++;document.getElementById('warnScreen').classList.add('on')}
     });
-    /* Deteksi blur (switch app di mobile) */
     window.addEventListener('blur',function(){if(active&&!document.hidden){warnCnt++;document.getElementById('warnScreen').classList.add('on')}});
-    /* Block shortcut */
     window.addEventListener('keydown',function(e){
         if(!active)return;
         if((e.ctrlKey||e.metaKey)&&(e.key==='c'||e.key==='u'||e.key==='p'||e.key==='s'||e.key==='a')){e.preventDefault();toast('Dilarang saat ujian!','warning')}
         if(e.key==='F12'){e.preventDefault();toast('Dilarang saat ujian!','warning')}
-        /* Block tab key keluar input */
         if(e.key==='Tab'){e.preventDefault()}
     });
-    /* Block pinch zoom */
     document.addEventListener('gesturestart',function(e){e.preventDefault()},{passive:false});
-    /* Block double-tap zoom */
     var lastTap=0;
     document.addEventListener('touchend',function(e){
         var now=Date.now();if(now-lastTap<300){e.preventDefault();lastTap=0}else{lastTap=now}
@@ -477,7 +478,7 @@ function addSec(){
 function resumeExam(){document.getElementById('warnScreen').classList.remove('on');goFS();setTimeout(function(){window.focus()},100)}
 
 /* ================================================================
-   SUBMIT
+   SUBMIT — Menyertakan npsn pada hasil
    ================================================================ */
 function doSubmit(forced){
     if(!forced){
@@ -499,9 +500,13 @@ function doSubmit(forced){
     });
 
     var fPG=mP>0?Math.round(sP/mP*100):0;var pass=fPG>=70;
+
+    /* HASIL UJIAN menyertakan npsn agar guru bisa filter */
     var rd={
         siswaId:stu.id,siswaNama:stu.nama,nisn:stu.nisn,
-        rombel:stu.rombel||'',kecamatanId:examKecId||null,
+        rombel:stu.rombel||'',
+        kecamatanId:examKecId||null,
+        npsn:examNpsn||null,                    /* ← NPSN sekolah */
         mapel:exam.mapel,kelas:exam.kelas,isPAJ:!!exam.isPAJ,token:exam.token,
         answers:ans,scorePG:fPG,passedPG:pass,pgBenar:tB,pgSalah:tS,pgKosong:tK,
         submittedAt:firebase.firestore.FieldValue.serverTimestamp(),warningCount:warnCnt
