@@ -144,7 +144,7 @@ body{font-family:'Source Sans 3',sans-serif;background:#0f1923;color:#e8ecf1;min
             <div><label class="block text-[10px] font-bold text-muted uppercase tracking-wider mb-1.5">Token Ujian</label><input type="text" id="inToken" class="input-field text-center text-lg font-mono tracking-[.25em] uppercase" placeholder="XXXXXX" maxlength="6" inputmode="text"></div>
             <button onclick="doLogin()" id="btnGo" class="btn-primary mt-5"><i class="fas fa-sign-in-alt mr-2"></i>MULAI UJIAN</button>
         </div>
-        <div class="mt-5 text-center text-[10px] text-muted leading-relaxed"><i class="fas fa-shield-alt mr-1 text-kopAccent/40"></i>Sistem termonitor. Token hanya berlaku untuk sekolah penerbitnya.</div>
+        <div class="mt-5 text-center text-[10px] text-muted leading-relaxed"><i class="fas fa-shield-alt mr-1 text-kopAccent/40"></i>Token hanya berlaku untuk siswa di sekolah penerbitnya.</div>
     </div>
 </div>
 
@@ -208,7 +208,10 @@ function updKecTag(){var el=document.getElementById('tagKec');if(!el||!examKecId
 (function(){var p=new URLSearchParams(window.location.search);var n=p.get('nisn');if(n)document.getElementById('inNisn').value=n})();
 
 /* ================================================================
-   LOGIN — VALIDASI 3 LAPIS: NISN + Token + NPSN Sekolah
+   LOGIN — VALIDASI 3 LAPIS:
+   1. Token valid → ambil kecamatanId + npsn + kelas penerbit
+   2. Siswa NISN terdaftar → cocokkan kecamatanId + npsn + kelas
+   3. Belum pernah mengerjakan token ini
    ================================================================ */
 function doLogin(){
     var nisn=document.getElementById('inNisn').value.trim();
@@ -230,27 +233,23 @@ function doLogin(){
         db.collection('students').where('nisn','==',nisn).get().then(function(ss){
             if(ss.empty){btnState(btn,false,'<i class="fas fa-sign-in-alt mr-2"></i>MULAI UJIAN');toast('NISN tidak terdaftar!','error');return}
 
-            /* Langkah 3: Cari siswa yang cocok dengan kecamatanId + npsn + kelas dari token */
+            /* Langkah 3: Cocokkan siswa dengan token
+               - kecamatanId harus cocok (jika token punya)
+               - npsn harus cocok (jika token punya) → INI yang mencegah cross-sekolah
+               - kelas harus cocok */
             var found=null;
             ss.docs.forEach(function(d){
                 var sd=d.data();
-                /* Cocokkan kecamatan (jika token punya kecamatanId) */
                 if(examKecId&&sd.kecamatanId&&sd.kecamatanId!==examKecId)return;
-                /* Cocokkan NPSN sekolah (jika token punya npsn) — INI YANG PENTING */
                 if(examNpsn&&sd.npsn&&sd.npsn!==examNpsn)return;
-                /* Cocokkan kelas */
                 if(sd.kelas!==td.kelas)return;
                 found=Object.assign({id:d.id},sd);
             });
 
             if(!found){
                 btnState(btn,false,'<i class="fas fa-sign-in-alt mr-2"></i>MULAI UJIAN');
-                /* Pesan error spesifik agar guru tahu apa masalahnya */
-                if(examNpsn){
-                    toast('Token bukan untuk sekolah Anda!','error');
-                }else{
-                    toast('Token tidak cocok dengan data Anda!','error');
-                }
+                if(examNpsn){toast('Token bukan untuk sekolah Anda!','error')}
+                else{toast('Token tidak cocok dengan data Anda!','error')}
                 return;
             }
 
@@ -265,7 +264,9 @@ function doLogin(){
 }
 
 /* ================================================================
-   AMBIL SOAL — Filter: kecamatanId + npsn
+   AMBIL SOAL — Filter: kecamatanId SAJA (tanpa npsn)
+   Soal dari Kode 1 (hanya punya kecamatanId) akan langsung muncul.
+   Npsn TIDAK digunakan di sini karena soal bersifat kecamatan.
    ================================================================ */
 function beginFlow(){
     var col=exam.isPAJ?'questions_paj':'questions';updKecTag();
@@ -274,11 +275,11 @@ function beginFlow(){
     q.get().then(function(snap){
         if(snap.empty){fallback(col);return}
         var all=snap.docs.map(function(d){return Object.assign({id:d.id},d.data())});
-        /* Filter ganda: kelas + kecamatanId + npsn */
+        /* Filter: kelas + kecamatanId SAJA
+           TANPA filter npsn — soal dari Kode 1 tetap muncul */
         var f=all.filter(function(x){
             if(x.kelas!==exam.kelas)return false;
             if(examKecId&&x.kecamatanId!==examKecId)return false;
-            if(examNpsn&&x.npsn!==examNpsn)return false;
             return true;
         });
         f.sort(function(a,b){if(a.type!==b.type)return a.type==='pg'?-1:1;var ta=a.createdAt?a.createdAt.toDate():new Date(0);var tb=b.createdAt?b.createdAt.toDate():new Date(0);return ta-tb});
@@ -289,14 +290,14 @@ function fallback(col){
     db.collection(col).where('mapel','==',exam.mapel).get().then(function(snap){
         if(snap.empty){alert('Tidak ada soal.');location.reload();return}
         var all=snap.docs.map(function(d){return Object.assign({id:d.id},d.data())});
+        /* Filter fallback: juga TANPA npsn */
         var f=all.filter(function(x){
             if(x.kelas!==exam.kelas)return false;
             if(examKecId&&x.kecamatanId!==examKecId)return false;
-            if(examNpsn&&x.npsn!==examNpsn)return false;
             return true;
         });
         f.sort(function(a,b){if(a.type!==b.type)return a.type==='pg'?-1:1;var ta=a.createdAt?a.createdAt.toDate():new Date(0);var tb=b.createdAt?b.createdAt.toDate():new Date(0);return ta-tb});
-        if(!f.length){alert('Belum ada soal dari sekolah Anda.');location.reload();return}boot(f);
+        if(!f.length){alert('Belum ada soal dari kecamatan Anda.');location.reload();return}boot(f);
     }).catch(function(e2){console.error(e2);alert('Gagal: '+e2.message);location.reload()});
 }
 
@@ -478,7 +479,7 @@ function addSec(){
 function resumeExam(){document.getElementById('warnScreen').classList.remove('on');goFS();setTimeout(function(){window.focus()},100)}
 
 /* ================================================================
-   SUBMIT — Menyertakan npsn pada hasil
+   SUBMIT — Hasil menyertakan npsn agar guru bisa filter per sekolah
    ================================================================ */
 function doSubmit(forced){
     if(!forced){
@@ -501,12 +502,12 @@ function doSubmit(forced){
 
     var fPG=mP>0?Math.round(sP/mP*100):0;var pass=fPG>=70;
 
-    /* HASIL UJIAN menyertakan npsn agar guru bisa filter */
+    /* npsn disertakan agar guru di Kode 2 bisa filter hasil per sekolah */
     var rd={
         siswaId:stu.id,siswaNama:stu.nama,nisn:stu.nisn,
         rombel:stu.rombel||'',
         kecamatanId:examKecId||null,
-        npsn:examNpsn||null,                    /* ← NPSN sekolah */
+        npsn:examNpsn||null,
         mapel:exam.mapel,kelas:exam.kelas,isPAJ:!!exam.isPAJ,token:exam.token,
         answers:ans,scorePG:fPG,passedPG:pass,pgBenar:tB,pgSalah:tS,pgKosong:tK,
         submittedAt:firebase.firestore.FieldValue.serverTimestamp(),warningCount:warnCnt
