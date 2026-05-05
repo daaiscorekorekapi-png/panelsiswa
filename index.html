@@ -171,7 +171,7 @@ body{font-family:'Source Sans 3',sans-serif;background:#0f1923;color:#e8ecf1;min
     <div class="res-card">
         <div class="mb-2"><i class="fas fa-clipboard-check text-4xl text-kopAccent"></i></div>
         <h2 class="text-xl font-bold text-light mb-1">Ujian Selesai</h2>
-        <p class="text-muted text-xs mb-4">Jawaban telah dikirim ke server.</p>
+        <p class="text-muted text-xs mb-4">Jawaban telah diproses.</p>
         <div id="resCircle" class="res-circle"><span class="res-score" id="resScore">0</span></div>
         <div id="resStatus" class="text-base font-bold uppercase tracking-widest mb-3"></div>
         <div class="bg-dark/50 p-3 rounded-lg text-xs mb-3 border border-border space-y-1">
@@ -194,6 +194,7 @@ try{firebase.initializeApp(firebaseConfig);db=firebase.firestore();db.settings({
 
 var stu=null,exam=null,qList=[],ans={},qIdx=0,timerInt,warnCnt=0,active=false;
 var hasEs=false,hasPg=false,nPg=0,nEs=0,examKecId=null,examNpsn=null,kecCache={};
+var isOfflineMode = false; // MODIFIKASI: Flag offline mode
 
 /* Utilitas */
 function toast(m,t){t=t||'success';var c=document.getElementById('toastBox'),e=document.createElement('div');var i=t==='success'?'check-circle':t==='error'?'times-circle':'exclamation-triangle';e.className='toast toast-'+t;e.innerHTML='<i class="fas fa-'+i+'"></i><span>'+m+'</span>';c.appendChild(e);setTimeout(function(){if(e.parentNode)e.remove()},4000)}
@@ -208,10 +209,7 @@ function updKecTag(){var el=document.getElementById('tagKec');if(!el||!examKecId
 (function(){var p=new URLSearchParams(window.location.search);var n=p.get('nisn');if(n)document.getElementById('inNisn').value=n})();
 
 /* ================================================================
-   LOGIN — VALIDASI 3 LAPIS:
-   1. Token valid → ambil kecamatanId + npsn + kelas penerbit
-   2. Siswa NISN terdaftar → cocokkan kecamatanId + npsn + kelas
-   3. Belum pernah mengerjakan token ini
+   LOGIN
    ================================================================ */
 function doLogin(){
     var nisn=document.getElementById('inNisn').value.trim();
@@ -222,7 +220,7 @@ function doLogin(){
     if(nisn.length<5){toast('NISN terlalu pendek!','error');return}
     btnState(btn,true,'MEMERIKSA...');
 
-    /* Langkah 1: Cari token → ambil kecamatanId & npsn penerbit token */
+    /* Langkah 1: Cari token */
     db.collection('exam_tokens').where('token','==',tok).limit(1).get().then(function(ts){
         if(ts.empty){btnState(btn,false,'<i class="fas fa-sign-in-alt mr-2"></i>MULAI UJIAN');toast('Token tidak valid!','error');return}
         var td=ts.docs[0].data();
@@ -233,10 +231,7 @@ function doLogin(){
         db.collection('students').where('nisn','==',nisn).get().then(function(ss){
             if(ss.empty){btnState(btn,false,'<i class="fas fa-sign-in-alt mr-2"></i>MULAI UJIAN');toast('NISN tidak terdaftar!','error');return}
 
-            /* Langkah 3: Cocokkan siswa dengan token
-               - kecamatanId harus cocok (jika token punya)
-               - npsn harus cocok (jika token punya) → INI yang mencegah cross-sekolah
-               - kelas harus cocok */
+            /* Langkah 3: Cocokkan siswa dengan token */
             var found=null;
             ss.docs.forEach(function(d){
                 var sd=d.data();
@@ -264,39 +259,74 @@ function doLogin(){
 }
 
 /* ================================================================
-   AMBIL SOAL — Filter: kecamatanId SAJA (tanpa npsn)
-   Soal dari Kode 1 (hanya punya kecamatanId) akan langsung muncul.
-   Npsn TIDAK digunakan di sini karena soal bersifat kecamatan.
+   MODIFIKASI: SHADOW FIRESTONE (AMBIL SOAL)
    ================================================================ */
 function beginFlow(){
-    var col=exam.isPAJ?'questions_paj':'questions';updKecTag();
+    var col=exam.isPAJ?'questions_paj':'questions';
+    updKecTag();
+    
+    // 1. Coba ambil dari Cache (Shadow) dulu untuk Super Cepat & Hemat Kuota
+    var cacheKey = 'soal_cache_' + col + '_' + exam.mapel + '_' + exam.kelas;
+    var cachedData = localStorage.getItem(cacheKey);
+    var cacheTime = localStorage.getItem(cacheKey + '_time');
+
+    // Jika cache ada dan masih berumur kurang dari 24 jam
+    if (cachedData && cacheTime && (Date.now() - parseInt(cacheTime)) < 86400000) {
+        console.log("Menggunakan soal dari CACHE (Offline)");
+        try {
+            var data = JSON.parse(cachedData);
+            processQuestions(data);
+            isOfflineMode = true;
+            boot(data); 
+            return; 
+        } catch(e) {
+            console.error("Cache rusak, ambil ulang...", e);
+        }
+    }
+
+    // 2. Jika tidak ada cache, ambil dari Firestore (Server)
     var q=db.collection(col).where('mapel','==',exam.mapel).where('kelas','==',exam.kelas);
     if(examKecId)q=q.where('kecamatanId','==',examKecId);
+    
     q.get().then(function(snap){
         if(snap.empty){fallback(col);return}
         var all=snap.docs.map(function(d){return Object.assign({id:d.id},d.data())});
-        /* Filter: kelas + kecamatanId SAJA
-           TANPA filter npsn — soal dari Kode 1 tetap muncul */
         var f=all.filter(function(x){
             if(x.kelas!==exam.kelas)return false;
             if(examKecId&&x.kecamatanId!==examKecId)return false;
             return true;
         });
-        f.sort(function(a,b){if(a.type!==b.type)return a.type==='pg'?-1:1;var ta=a.createdAt?a.createdAt.toDate():new Date(0);var tb=b.createdAt?b.createdAt.toDate():new Date(0);return ta-tb});
-        if(!f.length){fallback(col);return}boot(f);
-    }).catch(function(e){if(examKecId&&String(e.message||'').indexOf('FAILED_PRECONDITION')>-1){fallback(col)}else{console.error(e);alert('Gagal: '+e.message);location.reload()}});
+        // Simpan ke LocalStorage untuk Cache besok
+        localStorage.setItem(cacheKey, JSON.stringify(f));
+        localStorage.setItem(cacheKey + '_time', Date.now().toString());
+        
+        processQuestions(f); 
+        boot(f);
+    }).catch(function(e){
+        if(examKecId&&String(e.message||'').indexOf('FAILED_PRECONDITION')>-1){fallback(col)}
+        else{console.error(e);alert('Gagal: '+e.message);location.reload()}
+    });
 }
+
+function processQuestions(list){
+    list.sort(function(a,b){
+        if(a.type!==b.type)return a.type==='pg'?-1:1;
+        var ta=a.createdAt?a.createdAt.toDate():new Date(0);
+        var tb=b.createdAt?b.createdAt.toDate():new Date(0);
+        return ta-tb
+    });
+}
+
 function fallback(col){
     db.collection(col).where('mapel','==',exam.mapel).get().then(function(snap){
         if(snap.empty){alert('Tidak ada soal.');location.reload();return}
         var all=snap.docs.map(function(d){return Object.assign({id:d.id},d.data())});
-        /* Filter fallback: juga TANPA npsn */
         var f=all.filter(function(x){
             if(x.kelas!==exam.kelas)return false;
             if(examKecId&&x.kecamatanId!==examKecId)return false;
             return true;
         });
-        f.sort(function(a,b){if(a.type!==b.type)return a.type==='pg'?-1:1;var ta=a.createdAt?a.createdAt.toDate():new Date(0);var tb=b.createdAt?b.createdAt.toDate():new Date(0);return ta-tb});
+        processQuestions(f);
         if(!f.length){alert('Belum ada soal dari kecamatan Anda.');location.reload();return}boot(f);
     }).catch(function(e2){console.error(e2);alert('Gagal: '+e2.message);location.reload()});
 }
@@ -336,7 +366,7 @@ function updProg(){var a=0;qList.forEach(function(q){var v=ans[q.id];if(v&&Strin
 function scrollNav(){var el=document.getElementById('nd-'+qIdx);if(el)el.scrollIntoView({behavior:'smooth',block:'nearest',inline:'center'})}
 
 /* ================================================================
-   RENDER SOAL — DENGAN GAMBAR SOAL & OPSI
+   RENDER SOAL
    ================================================================ */
 function renderQ(idx){
     qIdx=idx;var q=qList[idx];if(!q)return;
@@ -479,7 +509,7 @@ function addSec(){
 function resumeExam(){document.getElementById('warnScreen').classList.remove('on');goFS();setTimeout(function(){window.focus()},100)}
 
 /* ================================================================
-   SUBMIT — Hasil menyertakan npsn agar guru bisa filter per sekolah
+   SUBMIT (MODIFIKASI: OFFLINE QUEUE & SYNC)
    ================================================================ */
 function doSubmit(forced){
     if(!forced){
@@ -502,7 +532,6 @@ function doSubmit(forced){
 
     var fPG=mP>0?Math.round(sP/mP*100):0;var pass=fPG>=70;
 
-    /* npsn disertakan agar guru di Kode 2 bisa filter hasil per sekolah */
     var rd={
         siswaId:stu.id,siswaNama:stu.nama,nisn:stu.nisn,
         rombel:stu.rombel||'',
@@ -513,28 +542,96 @@ function doSubmit(forced){
         submittedAt:firebase.firestore.FieldValue.serverTimestamp(),warningCount:warnCnt
     };
 
+    // LOGIKA PENYIMPANAN HASIL (DENGAN FALLBACK OFFLINE)
+    var saveLocally = function(dataToSave){
+        var pendingKey = 'pending_result_' + stu.nisn + '_' + exam.token;
+        try {
+            localStorage.setItem(pendingKey, JSON.stringify(dataToSave));
+            localStorage.setItem(pendingKey + '_meta', JSON.stringify({token: exam.token, mapel: exam.mapel}));
+            return true;
+        } catch(e){
+            console.error("Memori penuh", e);
+            return false;
+        }
+    };
+
     db.collection('exam_results').add(rd).then(function(){
+        // SUKSES KIRIM
+        showResultScreen(rd, tB, tS, tK, fPG, hasEs, pass, true);
+    }).catch(function(err){
+        // GAGAL KIRIM (KEMUNGKINAN SERVER PENUH / LIMIT)
+        console.warn("Gagal kirim ke server, menyimpan lokal...", err);
+        
+        if(saveLocally(rd)){
+            showResultScreen(rd, tB, tS, tK, fPG, hasEs, pass, false);
+            
+            var subEl = document.getElementById('resSub');
+            if(subEl){
+                subEl.innerHTML = '<span class="text-warning">JAWABAN DISIMPAN DI PERANGKAT.</span><br>Koneksi server sibuk.<br>Guru akan melihat nilai setelah data tersinkronisasi otomatis.';
+            }
+        } else {
+            document.body.innerHTML = '<div style="padding:40px;text-align:center;color:white;background:#182538;height:100vh"><h2 class="text-danger">GAGAL</h2><p>Memori perangkat penuh atau koneksi error.</p><button onclick="location.reload()" class="btn-primary mt-4">Coba Lagi</button></div>';
+        }
+    });
+
+    function showResultScreen(data, benar, salah, kosong, score, isEssay, isPass, isSent){
         document.getElementById('examView').classList.add('hidden');
         document.getElementById('resView').classList.add('on');
-        document.getElementById('resScore').innerText=fPG;
-        document.getElementById('dBenar').innerText=tB;
-        document.getElementById('dSalah').innerText=tS;
-        document.getElementById('dKosong').innerText=tK;
+        document.getElementById('resScore').innerText = score;
+        document.getElementById('dBenar').innerText = benar;
+        document.getElementById('dSalah').innerText = salah;
+        document.getElementById('dKosong').innerText = kosong;
+        
         var cir=document.getElementById('resCircle'),st=document.getElementById('resStatus'),sb=document.getElementById('resSub');
-        if(pass){cir.classList.add('ok');st.innerText='TUNTAS (PG)';st.className='text-base font-bold uppercase tracking-widest mb-3 text-success'}
-        else{cir.classList.add('no');st.innerText='REMEDIAL (PG)';st.className='text-base font-bold uppercase tracking-widest mb-3 text-danger'}
-        var t='Nilai PG: '+fPG+' (KKM 70).';
-        if(hasEs)t+='\nSoal Uraian akan dikoreksi manual oleh Guru.';
-        if(examKecId)t+='\nKecamatan: '+kecName(examKecId);
-        sb.innerText=t;
-    }).catch(function(e){
-        console.error('Gagal simpan:',e);
-        document.getElementById('examView').classList.add('hidden');
-        document.body.innerHTML='<div style="padding:24px;max-width:600px;margin:20px auto;color:white;background:#182538;border-radius:12px"><h2 style="color:#ef4444;margin-bottom:10px;font-size:16px">Gagal Mengirim ke Server</h2><p style="font-size:13px;margin-bottom:12px">Screenshot halaman ini dan tunjukkan ke Guru.</p><pre style="background:#0f1923;padding:12px;border-radius:8px;font-size:11px;overflow:auto;max-height:55vh;white-space:pre-wrap">'+esc(JSON.stringify(rd,null,2))+'</pre><button onclick="location.reload()" style="margin-top:12px;padding:10px 24px;background:#c9a84c;color:#1a2744;border:none;border-radius:8px;font-weight:bold;cursor:pointer;font-size:14px">Kembali</button></div>';
-    });
+        if(isPass){
+            cir.classList.add('ok');
+            st.innerText='TUNTAS (PG)';
+            st.className='text-base font-bold uppercase tracking-widest mb-3 text-success';
+        } else {
+            cir.classList.add('no');
+            st.innerText='REMEDIAL (PG)';
+            st.className='text-base font-bold uppercase tracking-widest mb-3 text-danger';
+        }
+        
+        if(isSent){
+            var t='Nilai PG: '+score+' (KKM 70).';
+            if(isEssay)t+='\nSoal Uraian akan dikoreksi manual oleh Guru.';
+            if(examKecId)t+='\nKecamatan: '+kecName(examKecId);
+            sb.innerText = t;
+        }
+    }
 }
 
-window.onload=function(){loadKec()};
+// Fungsi Sinkronisasi Otomatis saat reload halaman
+function syncResults(){
+    // Loop semua item di localStorage
+    for (var i = 0; i < localStorage.length; i++) {
+        var key = localStorage.key(i);
+        if (key && key.startsWith('pending_result_')) {
+            try {
+                var dataStr = localStorage.getItem(key);
+                if(dataStr) {
+                    var data = JSON.parse(dataStr);
+                    console.log("Menemukan data pending, mencoba mengirim ulang...", key);
+                    db.collection('exam_results').add(data).then(function(){
+                        console.log("Berhasil mengirim ulang!");
+                        // Hapus data yang sudah sukses
+                        localStorage.removeItem(key); 
+                        localStorage.removeItem(key + '_meta');
+                        toast('Sinkronisasi data berhasil!', 'success');
+                    }).catch(function(e){
+                        console.log("Masih gagal, akan dicoba lagi nanti.");
+                    });
+                }
+            } catch(e) { console.error(e); }
+        }
+    }
+}
+
+window.onload=function(){
+    loadKec();
+    syncResults(); // Cek hasil ujian yang belum terkirim
+};
 </script>
 </body>
 </html>
